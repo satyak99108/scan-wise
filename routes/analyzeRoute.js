@@ -50,10 +50,13 @@ router.post('/', async (req, res) => {
       }
     }
 
+    console.log(`[ROUTE] Sending response with result...`)
     res.json(result)
+    console.log(`[ROUTE] Response sent successfully ✓`)
   } catch (err) {
     console.error(`[ROUTE] Error occurred:`, err.message)
     console.error(`[ROUTE] Stack:`, err.stack)
+    console.log(`[ROUTE] Sending error response...`)
     res.status(500).json({ error: 'Analysis failed: ' + (err.message || 'Unknown error') })
   }
 })
