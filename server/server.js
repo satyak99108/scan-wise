@@ -54,12 +54,16 @@ app.get('/api/test', (req, res) => {
 })
 
 const analyzeRoute = require('../routes/analyzeRoute')
+const historyRoute = require('../routes/historyRoute')
+
 // Increase timeout for OCR processing (up to 2 minutes)
 app.use('/api/analyze', (req, res, next) => {
   req.setTimeout(120000)
   next()
 })
 app.use('/api/analyze', upload.single('image'), analyzeRoute)
+app.use('/api/history', historyRoute)
+
 
 const server = app.listen(5000, () => console.log('Server on port 5000'))
 // Set server timeout for long-running requests
