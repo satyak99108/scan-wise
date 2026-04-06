@@ -49,11 +49,31 @@ async function analyzeMacros(imageBuffer, mimeType) {
       messages: [
         {
           role: "system",
-          content: "You are an expert clinical nutritionist AI. Read the OCR text from a nutrition label or food menu and estimate the macronutrients per serving. You must respond strictly in JSON format. Do not include markdown wrappers or conversational text.\n\nJSON SCHEMA:\n{\n  \"food_detected\": \"Short description of the food item\",\n  \"calories\": 500,\n  \"protein\": 30,\n  \"carbs\": 40,\n  \"fats\": 20,\n  \"breakdown\": [\"Item 1\", \"Item 2\"],\n  \"confidence\": \"high|medium|low\"\n}"
+          content: `You are an OCR-extraction AI specializing in Nutrition Facts labels.
+Your primary job is to find the exact values for Calories, Protein, Carbohydrates, and Total Fat from messy OCR text.
+Do NOT guess or invent random macro values. Do not estimate generic macros unless absolutely no numbers are present.
+If numbers are present, parse them accurately (e.g. if OCR says "Calones 250", Calories = 250).
+Return ONLY a valid JSON object. No other text or markdown.`
         },
         {
           role: "user",
-          content: `Estimate the calories and macros from this OCR text: ${extractedText}`
+          content: `Extract the requested data primarily based on this OCR output. If the text seems to be an ingredient list with no numbers, estimate the macros for an average serving, but heavily prefer exact data.
+
+OCR TEXT:
+"""
+${extractedText}
+"""
+
+Return ONLY this JSON exact format:
+{
+  "food_detected": "Name of the product or meal",
+  "calories": 250,
+  "protein": 15,
+  "carbs": 30,
+  "fats": 10,
+  "breakdown": ["Extracted 250 from 'Calories'", "Extracted 15g from 'Protein'"],
+  "confidence": "high|medium|low"
+}`
         }
       ],
       response_format: { type: "json_object" }

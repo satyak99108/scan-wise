@@ -94,9 +94,16 @@ Return ONLY this exact JSON (no extra text, no markdown):
       throw new Error('Could not read the ingredient data. Please try a clearer photo focused on the ingredient list.')
     }
 
-    console.log(`[GROQ] Extracted: productName="${extracted.productName}", ingredients="${(extracted.ingredients || '').substring(0, 80)}..."`)
+    let ingredientsString = extracted.ingredients || '';
+    if (Array.isArray(ingredientsString)) {
+      ingredientsString = ingredientsString.join(', ');
+    } else if (typeof ingredientsString !== 'string') {
+      ingredientsString = String(ingredientsString);
+    }
 
-    if (!extracted.ingredients || extracted.ingredients.trim().length < 5) {
+    console.log(`[GROQ] Extracted: productName="${extracted.productName}", ingredients="${ingredientsString.substring(0, 80)}..."`)
+
+    if (!ingredientsString || ingredientsString.trim().length < 5) {
       throw new Error(
         'No ingredient list could be found. Please upload a photo that clearly shows the ingredient list or nutrition label.'
       )
@@ -104,7 +111,7 @@ Return ONLY this exact JSON (no extra text, no markdown):
 
     return {
       productName: extracted.productName || 'Unknown Product',
-      ingredients: extracted.ingredients
+      ingredients: ingredientsString
     }
   } catch (err) {
     console.error('[ERROR] Image extraction failed:', err.message)
@@ -129,6 +136,9 @@ async function analyzeIngredients(productName, ingredients, category) {
   const Groq = require('groq-sdk')
   const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
+  if (typeof ingredients !== 'string') {
+    ingredients = Array.isArray(ingredients) ? ingredients.join(', ') : String(ingredients);
+  }
   const ingredientCount = ingredients.split(',').length
   console.log(`[GROQ] Analyzing ${ingredientCount} ingredients for "${productName}" (${category})`)
 
