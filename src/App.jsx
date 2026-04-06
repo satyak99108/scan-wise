@@ -1,5 +1,5 @@
 import { useState } from "react"
-import ScannerPage from "./pages/ScannerPage"
+import ScannerPage from "./components/pages/scannerpage"
 
 function App() {
   const [result, setResult] = useState(null)
