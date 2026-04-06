@@ -1,36 +1,58 @@
 import React, { useState } from 'react';
 
 function App() {
-  const [productName, setProductName] = useState('');
-  const [ingredients, setIngredients] = useState('');
+  const [file, setFile] = useState(null);
   const [category, setCategory] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [preview, setPreview] = useState(null);
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(selectedFile);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!file || !category) {
+      setError('Please select both an image and a category');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setResult(null);
 
     try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('category', category);
+
       const response = await fetch('http://localhost:5000/api/analyze', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ productName, ingredients, category }),
+        body: formData,
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Analysis failed');
+        throw new Error(data.error || 'Analysis failed. Please try again.');
       }
 
-      const data = await response.json();
       setResult(data);
     } catch (err) {
-      setError(err.message);
+      console.error('Error:', err);
+      setError(err.message || 'Failed to analyze image. Make sure the server is running and the image is clear.');
     } finally {
       setLoading(false);
     }
@@ -46,25 +68,19 @@ function App() {
 
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Product Name</label>
+            <label className="block text-gray-700 mb-2">Upload Product Image (JPG/PNG)</label>
             <input
-              type="text"
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Ingredients</label>
-            <textarea
-              value={ingredients}
-              onChange={(e) => setIngredients(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows="4"
-              required
-            />
+            {preview && (
+              <div className="mt-4">
+                <img src={preview} alt="Preview" className="max-h-64 rounded-md" />
+              </div>
+            )}
           </div>
 
           <div className="mb-4">
@@ -88,7 +104,7 @@ function App() {
             disabled={loading}
             className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {loading ? 'Analyzing...' : 'Analyze'}
+            {loading ? 'Extracting ingredients... (this may take up to 30 seconds)' : 'Analyze'}
           </button>
         </form>
 
