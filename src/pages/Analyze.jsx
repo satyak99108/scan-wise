@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function Analyze() {
   const [file, setFile] = useState(null);
@@ -23,7 +24,7 @@ function Analyze() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file || !category) {
-      setError('Please select an image and a category.');
+      setError('ERROR: PARAMETERS MISSING');
       return;
     }
     setLoading(true);
@@ -38,245 +39,158 @@ function Analyze() {
         body: formData,
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Analysis failed.');
+      if (!response.ok) throw new Error(data.error || 'ANALYSIS FAULT');
       setResult(data);
     } catch (err) {
-      if (err.message === 'Failed to fetch') {
-        setError('Cannot connect to server. Please start the backend with: node server/server.js');
-      } else {
-        setError(err.message);
-      }
+      setError(err.message === 'Failed to fetch' ? 'CONNECTION SEVERED: START BACKEND LOGIC' : err.message.toUpperCase());
     } finally {
       setLoading(false);
     }
   };
 
-  const riskClass = (risk) => {
-    if (risk === 'safe') return 'risk-safe';
-    if (risk === 'caution') return 'risk-caution';
-    return 'risk-harmful';
-  };
-
-  const dotClass = (risk) => {
-    if (risk === 'safe') return 'dot dot-safe';
-    if (risk === 'caution') return 'dot dot-caution';
-    return 'dot dot-harmful';
-  };
-
-  const badgeClass = (score) => {
-    if (score === 'good') return 'badge badge-good';
-    if (score === 'okay') return 'badge badge-okay';
-    return 'badge badge-bad';
+  const severityColor = (score) => {
+    if (score === 'good') return 'var(--risk-low)';
+    if (score === 'okay') return 'var(--risk-med)';
+    return 'var(--risk-high)';
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f9fa', padding: '40px 16px 80px' }}>
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
-
-        {/* ── Header ── */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0d9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-            <h1 style={{ fontSize: '1.7rem', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
-              ScanWise
-            </h1>
+    <div style={{ paddingTop: '64px', minHeight: '100vh', display: 'flex' }}>
+      
+      {/* ─── Sidebar Panel ─── */}
+      <div style={{ width: '400px', borderRight: '1px solid var(--border)', padding: '40px', background: 'var(--bg)', height: 'calc(100vh - 64px)', position: 'sticky', top: '64px', overflowY: 'auto' }}>
+        <h1 className="grotesk" style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '40px', lineHeight: 1 }}>SYSTEM<br/>INPUT.</h1>
+        
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div>
+            <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '8px', opacity: 0.7 }}>01 // TARGET IMAGE</div>
+            <div className="brutal-box" style={{ padding: '20px', position: 'relative' }}>
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={handleFileChange}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }}
+              />
+              {!preview ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', border: '1px dashed var(--border)' }}>
+                  [ CLICK TO INJECT IMAGE ]
+                </div>
+              ) : (
+                <div style={{ position: 'relative' }}>
+                  <img src={preview} alt="Target" style={{ width: '100%', filter: 'grayscale(100%) contrast(1.2)' }} />
+                  <div style={{ position: 'absolute', top: 0, left: 0, background: 'var(--fg)', color: 'var(--bg)', padding: '4px 8px', fontSize: '0.8rem', fontWeight: 600 }}>IMAGE SECURED</div>
+                </div>
+              )}
+            </div>
           </div>
-          <p style={{ color: '#6b7280', fontSize: '0.9rem', fontWeight: 400 }}>
-            Upload a product image to analyze its ingredients
-          </p>
-        </div>
 
-        {/* ── Upload Form ── */}
-        <div className="card" style={{ padding: '32px', marginBottom: 20 }}>
-          <form onSubmit={handleSubmit}>
+          <div>
+            <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '8px', opacity: 0.7 }}>02 // CLASSIFICATION</div>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="brutal-input brutal-box"
+              required
+            >
+              <option value="">AWAITING SELECT...</option>
+              <option value="food">FOODSTUFF</option>
+              <option value="cosmetics">COSMETICS</option>
+              <option value="cleaning">CHEMICAL (CLEANING)</option>
+              <option value="other">UNDEFINED</option>
+            </select>
+          </div>
 
-            {/* Image Upload */}
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                Product Image
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png"
-                  onChange={handleFileChange}
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 5 }}
-                />
-                <div className={`upload-zone ${preview ? 'has-file' : ''}`}
-                  style={{ minHeight: preview ? 'auto' : 140, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: preview ? 0 : '24px', overflow: 'hidden' }}>
-                  {!preview ? (
-                    <>
-                      <svg width="36" height="36" fill="none" stroke="#9ca3af" strokeWidth="1.5" viewBox="0 0 24 24" style={{ marginBottom: 10 }}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span style={{ color: '#6b7280', fontSize: '0.85rem', fontWeight: 500 }}>Click to upload or drag image here</span>
-                      <span style={{ color: '#9ca3af', fontSize: '0.75rem', marginTop: 4 }}>JPG or PNG · Max 5 MB</span>
-                    </>
-                  ) : (
-                    <div style={{ width: '100%', position: 'relative' }}>
-                      <img src={preview} alt="Preview" style={{ width: '100%', maxHeight: 240, objectFit: 'contain', display: 'block', background: '#f9fafb', borderRadius: '10px' }} />
-                      <div style={{ position: 'absolute', bottom: 0, width: '100%', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', textAlign: 'center', padding: '8px', fontSize: '0.75rem', color: '#0d9488', fontWeight: 600 }}>
-                        ✓ Image selected · Click to change
-                      </div>
+          <button type="submit" className="brutal-button" disabled={loading} style={{ width: '100%' }}>
+            {loading ? '[ EXECUTING ]' : '[ INITIALIZE ]'}
+          </button>
+        </form>
+
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              style={{ padding: '20px', background: 'var(--risk-high)', color: '#000', marginTop: '32px', fontWeight: 700, fontSize: '0.9rem' }}
+            >
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ─── Main Content Display ─── */}
+      <div style={{ flex: 1, padding: '40px', position: 'relative' }}>
+        {loading && (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(9,9,11,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, backdropFilter: 'blur(5px)' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div className="grotesk" style={{ fontSize: '4rem', color: 'var(--accent)', animation: 'pulse 1s infinite' }}>EXTRACTING</div>
+              <div style={{ fontFamily: 'IBM Plex Mono' }}>Please wait while the neural engine parses the data matrix.</div>
+            </div>
+          </div>
+        )}
+
+        <AnimatePresence>
+          {result && !loading ? (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid var(--border)', paddingBottom: '20px', marginBottom: '40px' }}>
+                <h2 className="grotesk" style={{ fontSize: '4rem', fontWeight: 700, lineHeight: 0.8 }}>RESULTS.</h2>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '4px' }}>THREAT LEVEL</div>
+                  <div className="grotesk" style={{ fontSize: '2rem', fontWeight: 700, color: severityColor(result.health_score) }}>
+                    [{result.health_score.toUpperCase()}]
+                  </div>
+                </div>
+              </div>
+
+              {(result.warning || result.benefit) && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '40px' }}>
+                  {result.warning && (
+                    <div className="brutal-box" style={{ padding: '24px', borderLeft: `4px solid var(--risk-high)` }}>
+                      <div className="grotesk" style={{ color: 'var(--risk-high)', fontSize: '1.2rem', marginBottom: '12px' }}>CRITICAL FLAG</div>
+                      <p style={{ lineHeight: 1.5 }}>{result.warning}</p>
+                    </div>
+                  )}
+                  {result.benefit && (
+                    <div className="brutal-box" style={{ padding: '24px', borderLeft: `4px solid var(--risk-low)` }}>
+                      <div className="grotesk" style={{ color: 'var(--risk-low)', fontSize: '1.2rem', marginBottom: '12px' }}>POSITIVE TRAIT</div>
+                      <p style={{ lineHeight: 1.5 }}>{result.benefit}</p>
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
+              )}
 
-            {/* Category */}
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                Product Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                required
-                className="input-field"
-                style={{ appearance: 'none', cursor: 'pointer', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-              >
-                <option value="">Select a category…</option>
-                <option value="food">Food & Beverages</option>
-                <option value="cosmetics">Cosmetics & Skincare</option>
-                <option value="cleaning">Cleaning Products</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            {/* Submit */}
-            <button type="submit" disabled={loading || !file || !category} className="btn-primary">
-              {loading ? (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}>
-                    <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
-                    <path d="M12 2a10 10 0 019.95 9" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
-                  </svg>
-                  Analyzing… this may take 20–30s
-                </span>
-              ) : 'Analyze Ingredients'}
-            </button>
-          </form>
-        </div>
-
-        {/* ── Error ── */}
-        {error && (
-          <div className="card" style={{ padding: '16px 20px', marginBottom: 20, borderColor: '#fecaca', background: '#fef2f2' }}>
-            <p style={{ color: '#dc2626', fontSize: '0.85rem', fontWeight: 500, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <span style={{ fontSize: '1rem', lineHeight: 1 }}>⚠</span>
-              {error}
-            </p>
-          </div>
-        )}
-
-        {/* ── Loading Overlay ── */}
-        {loading && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(248,249,250,0.85)',
-            backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 16
-          }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}>
-              <circle cx="12" cy="12" r="10" stroke="#e5e7eb" strokeWidth="3" />
-              <path d="M12 2a10 10 0 019.95 9" stroke="#0d9488" strokeWidth="3" strokeLinecap="round" />
-            </svg>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ color: '#111827', fontSize: '1rem', fontWeight: 600 }}>Analyzing your product…</p>
-              <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: 4 }}>Reading image → Extracting ingredients → AI analysis</p>
-            </div>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════ */}
-        {/* ──          ANALYSIS RESULTS            ── */}
-        {/* ══════════════════════════════════════════ */}
-        {result && (
-          <div style={{ marginTop: 8 }}>
-
-            {/* Results Header */}
-            <div className="card" style={{ padding: '28px 32px', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                <div>
-                  <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#111827', marginBottom: 4 }}>Analysis Results</h2>
-                  <p style={{ fontSize: '0.8rem', color: '#9ca3af', fontWeight: 400 }}>Powered by AI ingredient analysis</p>
-                </div>
-                <span className={badgeClass(result.health_score)}>
-                  {result.health_score === 'good' ? '● ' : result.health_score === 'okay' ? '● ' : '● '}
-                  Safety: {result.health_score}
-                </span>
-              </div>
-            </div>
-
-            {/* Warning */}
-            {result.warning && (
-              <div className="card" style={{ padding: '18px 24px', marginBottom: 12, background: '#fffbeb', borderColor: '#fde68a', borderLeft: '4px solid #f59e0b' }}>
-                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>⚠ Warning</p>
-                <p style={{ fontSize: '0.88rem', color: '#78350f', lineHeight: 1.6, fontWeight: 400 }}>{result.warning}</p>
-              </div>
-            )}
-
-            {/* Benefit */}
-            {result.benefit && (
-              <div className="card" style={{ padding: '18px 24px', marginBottom: 12, background: '#ecfdf5', borderColor: '#a7f3d0', borderLeft: '4px solid #10b981' }}>
-                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#065f46', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>✓ Benefit</p>
-                <p style={{ fontSize: '0.88rem', color: '#064e3b', lineHeight: 1.6, fontWeight: 400 }}>{result.benefit}</p>
-              </div>
-            )}
-
-            {/* Ingredient Breakdown */}
-            <div className="card" style={{ padding: '28px 32px', marginBottom: 16 }}>
-              <h3 style={{ fontSize: '0.82rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 20 }}>
-                Ingredient Breakdown
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                {(result.simplified || []).map((item, i) => (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0',
-                    borderBottom: i < result.simplified.length - 1 ? '1px solid #f3f4f6' : 'none'
-                  }}>
-                    <div className={dotClass(item.risk)} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#1f2937', marginBottom: 2 }}>
-                        {item.original}
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#6b7280', fontWeight: 400, lineHeight: 1.5 }}>
-                        {item.simple}
-                      </div>
+              <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '16px', opacity: 0.7 }}>RAW INGREDIENT DUMP:</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {result.simplified?.map((item, i) => (
+                  <motion.div 
+                    key={i}
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ ease: "easeOut", duration: 0.4, delay: i * 0.1 }}
+                    style={{ transformOrigin: 'left', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)', padding: '16px', display: 'flex' }}
+                  >
+                    <div style={{ width: '8px', background: severityColor(item.risk), marginRight: '20px' }} />
+                    <div style={{ flex: 1 }}>
+                      <div className="grotesk" style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--fg)', marginBottom: '4px' }}>{item.original}</div>
+                      <div style={{ opacity: 0.7, fontSize: '0.9rem' }}>{item.simple}</div>
                     </div>
-                    <span className={`risk-pill ${riskClass(item.risk)}`}>
-                      {item.risk}
-                    </span>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
+            </motion.div>
+          ) : (
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
+              <div className="grotesk" style={{ fontSize: '6rem', transform: 'rotate(-90deg)', whiteSpace: 'nowrap' }}>AWAITING DATA</div>
             </div>
-
-            {/* Alternatives */}
-            {result.alternatives && result.alternatives.length > 0 && (
-              <div className="card" style={{ padding: '28px 32px' }}>
-                <h3 style={{ fontSize: '0.82rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 16 }}>
-                  Recommended Alternatives
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                  {result.alternatives.map((alt, i) => (
-                    <div key={i} style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0',
-                      borderBottom: i < result.alternatives.length - 1 ? '1px solid #f3f4f6' : 'none'
-                    }}>
-                      <span style={{ color: '#0d9488', fontSize: '0.85rem' }}>→</span>
-                      <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: 400 }}>{alt}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
+          )}
+        </AnimatePresence>
       </div>
+
     </div>
   );
 }

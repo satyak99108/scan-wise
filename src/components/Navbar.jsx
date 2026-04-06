@@ -1,36 +1,79 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 function Navbar() {
   const location = useLocation();
 
-  const getLinkStyle = (path) => {
-    const isActive = location.pathname === path;
-    return `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-      isActive 
-        ? 'bg-teal-50 text-teal-700' 
-        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-    }`;
-  };
+  const links = [
+    { path: '/', label: 'HOME' },
+    { path: '/analyze', label: 'ANALYZE' },
+    { path: '/history', label: 'ARCHIVE' },
+    { path: '/bmi', label: 'BMI' },
+  ];
 
   return (
-    <nav style={{ background: '#ffffff', borderBottom: '1px solid #e5e7eb', padding: '16px 24px', position: 'sticky', top: 0, zIndex: 100 }}>
-      <div style={{ maxWidth: 1024, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0d9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
-            ScanWise
-          </span>
-        </Link>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <Link to="/" className={getLinkStyle('/')}>Home</Link>
-          <Link to="/analyze" className={getLinkStyle('/analyze')}>Analyze</Link>
-          <Link to="/history" className={getLinkStyle('/history')}>History</Link>
-          <Link to="/bmi" className={getLinkStyle('/bmi')}>BMI Calculator</Link>
-        </div>
+    <nav style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0,
+      zIndex: 100,
+      background: 'var(--bg)',
+      borderBottom: '1px solid var(--border)',
+      display: 'flex',
+      alignItems: 'stretch',
+      height: '64px'
+    }}>
+      <Link to="/" style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        padding: '0 32px',
+        borderRight: '1px solid var(--border)',
+        textDecoration: 'none',
+        background: 'var(--fg)',
+        color: 'var(--bg)'
+      }}>
+        <span className="grotesk" style={{ fontSize: '1.4rem', fontWeight: 700, letterSpacing: '-0.05em' }}>
+          SCANWISE_
+        </span>
+      </Link>
+      
+      <div style={{ display: 'flex', flex: 1, overflowX: 'auto' }}>
+        {links.map((link) => {
+          const isActive = location.pathname === link.path;
+          return (
+            <Link 
+              key={link.path}
+              to={link.path} 
+              style={{
+                position: 'relative',
+                display: 'flex', alignItems: 'center',
+                padding: '0 32px',
+                borderRight: '1px solid var(--border)',
+                textDecoration: 'none',
+                color: isActive ? 'var(--bg)' : 'var(--fg)',
+                fontWeight: 500,
+                transition: 'color 0.2s',
+                overflow: 'hidden'
+              }}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="nav-bg"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'var(--accent)',
+                    zIndex: -1
+                  }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              <motion.span whileHover={{ x: 5 }} transition={{ type: 'spring', stiffness: 300 }}>
+                {link.label}
+              </motion.span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

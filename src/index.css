@@ -1,182 +1,175 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 @import "tailwindcss";
 
-/* ─── Base ─── */
+:root {
+  --bg: #09090b; /* Very deep charcoal, almost black */
+  --fg: #fafafa;
+  --border: #27272a;
+  --accent: #dfff00; /* Brutal lime yellow */
+  --accent-secondary: #000000;
+  --risk-high: #ff3333;
+  --risk-med: #ffaa00;
+  --risk-low: #00ff66;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  border-radius: 0 !important; /* Forces brutalist sharp edges */
+}
+
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #f8f9fa;
-  color: #1f2937;
+  font-family: 'IBM Plex Mono', monospace;
+  background-color: var(--bg);
+  color: var(--fg);
   min-height: 100vh;
+  /* Brutalist architectural grid */
+  background-image: 
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center top;
+  background-attachment: fixed;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Cards ─── */
-.card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: box-shadow 0.2s ease;
+h1, h2, h3, h4, .grotesk {
+  font-family: 'Space Grotesk', sans-serif;
+  text-transform: uppercase;
 }
 
-.card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+/* ─── UI Structural Elements ─── */
+.brutal-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+  position: relative;
 }
 
-/* ─── Inputs ─── */
-.input-field {
+.brutal-box::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
   width: 100%;
-  padding: 12px 16px;
-  font-size: 0.95rem;
-  font-family: inherit;
-  color: #1f2937;
-  background: #ffffff;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 10px;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
+  background: var(--border);
+  z-index: -1;
+  transition: all 0.3s ease;
 }
 
-.input-field:focus {
-  border-color: #0d9488;
-  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+.brutal-box:hover::after {
+  top: 8px;
+  left: 8px;
+  background: var(--accent);
 }
 
-.input-field::placeholder {
-  color: #9ca3af;
-}
-
-/* ─── Primary Button ─── */
-.btn-primary {
-  width: 100%;
-  padding: 14px 24px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  font-family: inherit;
-  color: #ffffff;
-  background: #0d9488;
+.brutal-button {
+  background: var(--fg);
+  color: var(--bg);
   border: none;
-  border-radius: 10px;
+  padding: 16px 32px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #0f766e;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
-}
-
-.btn-primary:active:not(:disabled) {
-  transform: scale(0.99);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* ─── Badges ─── */
-.badge {
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
-  padding: 5px 14px;
-  border-radius: 20px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: capitalize;
-  letter-spacing: 0.02em;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.2s;
+  z-index: 1;
 }
 
-.badge-good {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
+.brutal-button::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: var(--accent);
+  transition: all 0.4s cubic-bezier(0.86, 0, 0.07, 1);
+  z-index: -1;
 }
 
-.badge-okay {
-  background: #fffbeb;
-  color: #d97706;
-  border: 1px solid #fde68a;
+.brutal-button:hover::before {
+  left: 0;
 }
 
-.badge-bad {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+.brutal-input {
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
 }
 
-/* ─── Risk Dots ─── */
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.brutal-input:focus {
+  border-color: var(--accent);
+  background: rgba(223, 255, 0, 0.05); /* very faint lime */
 }
 
-.dot-safe { background: #10b981; }
-.dot-caution { background: #f59e0b; }
-.dot-harmful { background: #ef4444; }
-
-/* ─── Risk Pill ─── */
-.risk-pill {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+/* Marquee Animation */
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  padding: 12px 0;
 }
 
-.risk-safe {
-  background: #ecfdf5;
-  color: #059669;
+.marquee-content {
+  display: inline-block;
+  animation: marquee 20s linear infinite;
 }
 
-.risk-caution {
-  background: #fffbeb;
-  color: #d97706;
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
-.risk-harmful {
-  background: #fef2f2;
-  color: #dc2626;
+/* Scanner line */
+.scanner-line {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 2px;
+  background: var(--accent);
+  animation: scan 3s ease-in-out infinite alternate;
+  box-shadow: 0 0 10px var(--accent);
+  z-index: 20;
 }
 
-/* ─── Upload Zone ─── */
-.upload-zone {
-  border: 2px dashed #d1d5db;
-  border-radius: 12px;
-  background: #fafafa;
-  transition: all 0.2s ease;
-  cursor: pointer;
+@keyframes scan {
+  0% { top: 0; }
+  100% { top: 100%; }
 }
 
-.upload-zone:hover {
-  border-color: #0d9488;
-  background: #f0fdfa;
-}
-
-.upload-zone.has-file {
-  border-style: solid;
-  border-color: #0d9488;
-  background: #ffffff;
-}
-
-/* ─── Spinner ─── */
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ─── Scrollbar ─── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+/* Minimal Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); border-left: 1px solid var(--border); }
+::-webkit-scrollbar-thumb { background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
