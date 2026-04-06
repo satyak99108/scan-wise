@@ -1,16 +1,23 @@
-import React from 'react';
+import { useState } from "react"
+import ScannerPage from "./pages/ScannerPage"
 
 function App() {
-  return (
-    <div className="h-screen flex items-center justify-center bg-gray-100">
-      <div className="flex items-center space-x-4">
-        <div className="w-12 h-12 bg-blue-500 rounded-lg"></div>
-        <h1 className="text-3xl font-bold text-gray-800">
-          ScanWise
-        </h1>
-      </div>
-    </div>
-  );
-}
+  const [result, setResult] = useState(null)
 
-export default App;
+  return (
+    <div>
+      {!result
+        ? <ScannerPage onResult={setResult} />
+        : <div className="p-8">
+            <pre className="text-xs bg-gray-100 p-4 rounded overflow-auto">
+              {JSON.stringify(result, null, 2)}
+            </pre>
+            <button onClick={() => setResult(null)} className="mt-4 text-blue-600">
+              ← Scan another
+            </button>
+          </div>
+      }
+    </div>
+  )
+}
+export default App
