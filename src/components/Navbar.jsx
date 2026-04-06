@@ -7,9 +7,11 @@ function Navbar() {
 
   const links = [
     { path: '/', label: 'HOME' },
-    { path: '/analyze', label: 'ANALYZE' },
+    { path: '/analyze', label: 'ANALYZE INGREDIENTS' },
+    { path: '/macros', label: 'MEAL MACROS' },
+    { path: '/bmi', label: 'BMI INDEX' },
+    { path: '/thresholds', label: 'TOXIC THRESHOLDS' },
     { path: '/history', label: 'ARCHIVE' },
-    { path: '/bmi', label: 'BMI' },
   ];
 
   return (

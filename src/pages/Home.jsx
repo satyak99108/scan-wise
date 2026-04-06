@@ -48,29 +48,34 @@ function Home() {
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            style={{ fontSize: '1.2rem', maxWidth: '500px', marginBottom: '48px', lineHeight: 1.5, borderLeft: '4px solid var(--accent)', paddingLeft: '16px' }}
+            style={{ fontSize: '1.2rem', maxWidth: '600px', marginBottom: '48px', lineHeight: 1.5, borderLeft: '4px solid var(--accent)', paddingLeft: '16px' }}
           >
-            Raw intelligence extraction for product ingredients. We shred corporate nomenclature to expose exactly what enters your body.
+            A complete human intelligence package. Decode ingredient toxicity, calculate meal macros via optical matrix, compute BMI status, and set hard daily limits for hazardous chemicals. We dictate exactly what enters your body.
           </motion.p>
 
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.6 }}
+            style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}
           >
             <Link to="/analyze" className="brutal-button" style={{ textDecoration: 'none' }}>
-              [ INITIALIZE SCANNER ]
+              [ INGREDIENT SCAN ]
+            </Link>
+            <Link to="/macros" className="brutal-button" style={{ textDecoration: 'none', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)' }}>
+              [ MEAL MACROS ]
             </Link>
           </motion.div>
         </div>
       </section>
 
       {/* ─── Grid Features ─── */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
         {[
-          { num: '01', title: 'DETECT', desc: 'Scan matrices to isolate toxic components.' },
-          { num: '02', title: 'TRANSLATE', desc: 'Convert chemical synonyms into standard readable facts.' },
-          { num: '03', title: 'DECIDE', desc: 'Actionable intelligence to prevent consumption errors.' }
+          { num: '01', title: 'TOXIC DECIPHER', desc: 'Scan matrices to isolate toxic components in food and cosmetics.' },
+          { num: '02', title: 'MACRO OPTICS', desc: 'Push images of physical meals through Llama-3.2 vision to extract caloric loads.' },
+          { num: '03', title: 'BMI ENGINE', desc: 'Compute biological mass constraints seamlessly.' },
+          { num: '04', title: 'HARD LIMITS', desc: 'Determine exact max limits for caffeine, sodium, and sugars based on core metrics.' }
         ].map((feature, i) => (
           <motion.div 
             key={i}

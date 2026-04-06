@@ -55,6 +55,7 @@ app.get('/api/test', (req, res) => {
 
 const analyzeRoute = require('../routes/analyzeRoute')
 const historyRoute = require('../routes/historyRoute')
+const macroRoute = require('../routes/macroRoute')
 
 // Increase timeout for OCR processing (up to 2 minutes)
 app.use('/api/analyze', (req, res, next) => {
@@ -62,6 +63,7 @@ app.use('/api/analyze', (req, res, next) => {
   next()
 })
 app.use('/api/analyze', upload.single('image'), analyzeRoute)
+app.use('/api/macros', upload.single('image'), macroRoute)
 app.use('/api/history', historyRoute)
 
 

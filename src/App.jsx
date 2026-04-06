@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import Analyze from './pages/Analyze';
 import History from './pages/History';
 import BmiCalculator from './pages/BmiCalculator';
+import Thresholds from './pages/Thresholds';
+import Macros from './pages/Macros';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -54,6 +56,8 @@ function App() {
               <Route path="/analyze" element={<Analyze />} />
               <Route path="/history" element={<History />} />
               <Route path="/bmi" element={<BmiCalculator />} />
+              <Route path="/thresholds" element={<Thresholds />} />
+              <Route path="/macros" element={<Macros />} />
             </Routes>
           </main>
         </div>
