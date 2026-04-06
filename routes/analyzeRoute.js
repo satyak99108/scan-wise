@@ -55,9 +55,9 @@ router.post('/', async (req, res) => {
     console.log(`[ROUTE] Response sent successfully ✓`)
   } catch (err) {
     console.error(`[ROUTE] Error occurred:`, err.message)
-    console.error(`[ROUTE] Stack:`, err.stack)
-    console.log(`[ROUTE] Sending error response...`)
-    res.status(500).json({ error: 'Analysis failed: ' + (err.message || 'Unknown error') })
+    // Return the human-readable message directly from the pipeline
+    const userMessage = err.message || 'An unknown error occurred. Please try again.'
+    res.status(500).json({ error: userMessage })
   }
 })
 
