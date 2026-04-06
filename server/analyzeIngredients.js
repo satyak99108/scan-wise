@@ -1,9 +1,9 @@
-require('dotenv').config({ path: '.env' })
-const Groq = require('groq-sdk')
-
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
+require('dotenv').config({ path: '../.env' })
 
 async function analyzeIngredients(productName, ingredients, category) {
+  const Groq = require('groq-sdk')
+  const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
+
   const completion = await client.chat.completions.create({
     model: 'llama-3.1-8b-instant',
     max_tokens: 1000,
@@ -29,9 +29,13 @@ Return ONLY a JSON object (no extra text) with this exact structure:
   return JSON.parse(completion.choices[0].message.content)
 }
 
+module.exports = { analyzeIngredients }
+
 // Test it
-analyzeIngredients(
-  "Lay's Classic Chips",
-  "Potatoes, Vegetable Oil, Salt, Dextrose, Sodium Diacetate",
-  "human food"
-).then(result => console.log(JSON.stringify(result, null, 2)))
+if (require.main === module) {
+  analyzeIngredients(
+    "Lay's Classic Chips",
+    "Potatoes, Vegetable Oil, Salt, Dextrose, Sodium Diacetate",
+    "human food"
+  ).then(result => console.log(JSON.stringify(result, null, 2)))
+}
