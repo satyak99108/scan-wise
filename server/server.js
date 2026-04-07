@@ -67,6 +67,10 @@ app.use('/api/macros', upload.single('image'), macroRoute)
 app.use('/api/history', historyRoute)
 
 
-const server = app.listen(5000, () => console.log('Server on port 5000'))
-// Set server timeout for long-running requests
-server.setTimeout(120000)
+if (require.main === module) {
+  const server = app.listen(5000, () => console.log('Server on port 5000'))
+  // Set server timeout for long-running requests
+  server.setTimeout(120000)
+}
+
+module.exports = app

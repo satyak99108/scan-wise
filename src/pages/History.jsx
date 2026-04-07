@@ -7,7 +7,7 @@ function History() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/history')
+    fetch('/api/history')
       .then(res => {
         if (!res.ok) throw new Error('DATA LOSS: FETCH FAILED.');
         return res.json();

@@ -33,7 +33,7 @@ function Macros() {
       const formData = new FormData();
       formData.append('image', file);
       
-      const response = await fetch('http://localhost:5000/api/macros', {
+      const response = await fetch('/api/macros', {
         method: 'POST',
         body: formData,
       });
