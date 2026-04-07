@@ -2,20 +2,35 @@ const Tesseract = require('tesseract.js')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
+const Groq = require('groq-sdk')
 
+// Load environment variables
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
+
+// Create common groq client
+const groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY || 'MISSING_KEY' })
+
+/**
+ * Extracts product name and ingredients from an image buffer via OCR + AI parsing
+ */
 async function extractIngredientsFromImage(imageBuffer, fileName) {
   let tempFilePath = null
   try {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY is not set in your .env file.')
+    }
+
     console.log(`[OCR] Processing image: ${fileName}, Buffer size: ${imageBuffer.length} bytes`)
 
-    // Save buffer to temporary file (Tesseract works better with file paths)
-    tempFilePath = path.join(os.tmpdir(), `scan_${Date.now()}_${fileName}`)
+    // Save buffer to temporary file for Tesseract
+    const safeFileName = fileName.replace(/[^a-z0-9.]/gi, '_').toLowerCase()
+    tempFilePath = path.join(os.tmpdir(), `sw_${Date.now()}_${safeFileName}`)
     fs.writeFileSync(tempFilePath, imageBuffer)
     console.log(`[OCR] Saved temp image to: ${tempFilePath}`)
 
     console.log(`[OCR] Running Tesseract OCR...`)
 
-    // Improved Tesseract config
+    // Static recognize method for simplicity
     const { data: { text, confidence } } = await Tesseract.recognize(
       tempFilePath,
       'eng',
@@ -24,88 +39,55 @@ async function extractIngredientsFromImage(imageBuffer, fileName) {
           if (m.status === 'recognizing text') {
             process.stdout.write(`\r[OCR] Progress: ${Math.round(m.progress * 100)}%`)
           }
-        },
-        tessedit_pageseg_mode: '3',    // Auto page segmentation
-        tessedit_ocr_engine_mode: '1', // LSTM only (more accurate)
-        preserve_interword_spaces: '1',
+        }
       }
     )
     console.log(`\n[OCR] Completed. Confidence: ${Math.round(confidence)}%`)
-    console.log(`[OCR] Extracted text (first 500 chars):\n${text.substring(0, 500)}`)
 
     if (!text || text.trim().length < 10) {
       throw new Error(
-        'Very little text was detected in the image. Please upload a clearer photo of the product label with the ingredient list visible.'
+        'Very little text was detected in the product image. Please upload a clearer photo of the ingredient label.'
       )
     }
 
-    if (!process.env.GROQ_API_KEY) {
-      throw new Error('GROQ_API_KEY is not set. Please add it to your .env file.')
-    }
-
-    const Groq = require('groq-sdk')
-    const groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
-    console.log(`[GROQ] Sending OCR text to Groq for intelligent parsing...`)
+    console.log(`[GROQ] Intelligent parsing of OCR text...`)
     const parseResponse = await groqClient.chat.completions.create({
       model: 'llama-3.1-8b-instant',
-      max_tokens: 600,
+      max_tokens: 1000,
       temperature: 0.1,
       messages: [
         {
           role: 'system',
-          content: `You are an expert at reading OCR-extracted text from product labels.
-OCR text is often imperfect with typos, missing spaces, or garbled characters.
-Your job is to intelligently identify product names and ingredient lists even from messy OCR output.
-Always return ONLY a valid JSON object, never any explanation or extra text.`
+          content: `You are an expert at reading messy OCR-extracted text from product labels.
+Find the product name and human-readable ingredients list.
+Always return valid JSON.`
         },
         {
           role: 'user',
-          content: `The following text was extracted from a product label image via OCR.
-The text may contain OCR errors, typos, or garbled characters - do your best to interpret it.
+          content: `Extracted OCR Text:\n"""\n${text}\n"""\n\nExtract:
+1. Product name
+2. Ingredients list (string of common names)
 
-OCR TEXT:
-"""
-${text}
-"""
-
-Extract:
-1. The product name (look for brand name, product type at the top)
-2. The full ingredients list (look for words like "Ingredients:", "INGREDIENTS", "Contains:", "Ingr." etc.)
-
-Return ONLY this exact JSON (no extra text, no markdown):
-{"productName": "product name here", "ingredients": "ingredient1, ingredient2, ingredient3..."}`
+Return JSON format: {"productName": "...", "ingredients": "..."}`
         }
-      ]
+      ],
+      response_format: { type: "json_object" }
     })
 
-    const rawContent = parseResponse.choices[0].message.content.trim()
-    console.log(`[GROQ] Parse response: ${rawContent}`)
-
-    const jsonMatch = rawContent.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      throw new Error('Could not parse product information from the image text. Please try a clearer image showing the ingredient label.')
-    }
-
-    let extracted
-    try {
-      extracted = JSON.parse(jsonMatch[0])
-    } catch (parseErr) {
-      throw new Error('Could not read the ingredient data. Please try a clearer photo focused on the ingredient list.')
-    }
-
-    let ingredientsString = extracted.ingredients || '';
+    const extracted = JSON.parse(parseResponse.choices[0].message.content)
+    let ingredientsString = extracted.ingredients || ''
+    
     if (Array.isArray(ingredientsString)) {
-      ingredientsString = ingredientsString.join(', ');
+      ingredientsString = ingredientsString.join(', ')
     } else if (typeof ingredientsString !== 'string') {
-      ingredientsString = String(ingredientsString);
+      ingredientsString = String(ingredientsString)
     }
 
-    console.log(`[GROQ] Extracted: productName="${extracted.productName}", ingredients="${ingredientsString.substring(0, 80)}..."`)
+    console.log(`[GROQ] Extracted: productName="${extracted.productName}", ingredients="${ingredientsString.substring(0, 100)}..."`)
 
     if (!ingredientsString || ingredientsString.trim().length < 5) {
       throw new Error(
-        'No ingredient list could be found. Please upload a photo that clearly shows the ingredient list or nutrition label.'
+        'No ingredient list could be found. Please upload a clearer photo of the ingredient section.'
       )
     }
 
@@ -122,93 +104,78 @@ Return ONLY this exact JSON (no extra text, no markdown):
         fs.unlinkSync(tempFilePath)
         console.log(`[OCR] Cleaned up temp file`)
       } catch (e) {
-        console.log(`[OCR] Could not clean up temp file: ${e.message}`)
+        console.log(`[OCR] Cleanup warning: ${e.message}`)
       }
     }
   }
 }
 
+/**
+ * Deep analysis of ingredients using AI
+ */
 async function analyzeIngredients(productName, ingredients, category) {
   if (!process.env.GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY is not set in environment variables')
   }
 
-  const Groq = require('groq-sdk')
-  const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
   if (typeof ingredients !== 'string') {
-    ingredients = Array.isArray(ingredients) ? ingredients.join(', ') : String(ingredients);
+    ingredients = Array.isArray(ingredients) ? ingredients.join(', ') : String(ingredients)
   }
+  
   const ingredientCount = ingredients.split(',').length
   console.log(`[GROQ] Analyzing ${ingredientCount} ingredients for "${productName}" (${category})`)
 
-  const completion = await client.chat.completions.create({
-    model: 'llama-3.1-8b-instant',
-    max_tokens: 1500,
-    temperature: 0.2,
-    messages: [
-      {
-        role: 'system',
-        content: `You are a professional product safety and ingredient analysis expert.
-You analyze ingredients in consumer products (food, cosmetics, cleaning products) and explain them clearly to everyday people.
-Always return ONLY valid JSON, never any explanation or markdown formatting.`
-      },
-      {
-        role: 'user',
-        content: `Analyze the ingredients in this ${category} product:
+  try {
+    const completion = await groqClient.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      max_tokens: 3000, // Increased for long lists
+      temperature: 0.2,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a professional product safety expert.
+Analyze ingredients in ${category} products and explain them simply.
+Return ONLY valid JSON.`
+        },
+        {
+          role: 'user',
+          content: `Analyze these ingredients for "${productName}":
+${ingredients}
 
-Product: ${productName}
-Ingredients: ${ingredients}
-
-Return ONLY this JSON structure (no extra text, no markdown):
+Return format:
 {
   "simplified": [
-    { "original": "EXACT ingredient name", "simple": "plain English explanation of what it is and its purpose", "risk": "safe" }
+    { "original": "Name", "simple": "Description", "risk": "safe|caution|harmful" }
   ],
-  "health_score": "good",
-  "warning": "one sentence warning about concerning ingredients, or null if none",
-  "benefit": "one sentence about the most notable benefit, or null",
-  "alternatives": ["healthier alternative product 1", "alternative 2", "alternative 3"]
-}
+  "health_score": "good|okay|bad",
+  "warning": "One sentence summary of concerns or null",
+  "benefit": "One sentence summary of benefits or null",
+  "alternatives": ["Alternative 1", "Alternative 2", "Alternative 3"]
+}`
+        }
+      ],
+      response_format: { type: "json_object" }
+    })
 
-Rules:
-- "risk" must be exactly one of: "safe", "caution", "harmful"
-- "health_score" must be exactly one of: "good", "okay", "bad"
-- Include ALL ingredients from the list in "simplified"
-- "warning" and "benefit" must be a string or null (never an empty string)
-- "alternatives" must have 2-4 items`
-      }
-    ]
-  })
+    const result = JSON.parse(completion.choices[0].message.content)
 
-  const rawContent = completion.choices[0].message.content.trim()
-  console.log('[GROQ] Analysis response (first 400 chars):', rawContent.substring(0, 400))
+    // Sanitize
+    if (!Array.isArray(result.simplified)) result.simplified = []
+    if (!['good', 'okay', 'bad'].includes(result.health_score)) result.health_score = 'okay'
+    result.warning = result.warning || null
+    result.benefit = result.benefit || null
+    if (!Array.isArray(result.alternatives)) result.alternatives = []
 
-  const jsonMatch = rawContent.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) {
-    throw new Error('Invalid response from AI analysis service. Please try again.')
+    return result
+  } catch (err) {
+    console.error('[ERROR] AI Analysis failed:', err.message)
+    throw new Error('Could not analyze the ingredients. Please check your connection and try again.')
   }
-
-  let result
-  try {
-    result = JSON.parse(jsonMatch[0])
-  } catch (e) {
-    throw new Error('Could not parse AI response. Please try again.')
-  }
-
-  // Sanitize to ensure correct types
-  if (!Array.isArray(result.simplified)) result.simplified = []
-  if (!['good', 'okay', 'bad'].includes(result.health_score)) result.health_score = 'okay'
-  if (result.warning === '') result.warning = null
-  if (result.benefit === '') result.benefit = null
-  if (!Array.isArray(result.alternatives)) result.alternatives = []
-
-  return result
 }
 
 module.exports = { extractIngredientsFromImage, analyzeIngredients }
 
-// Quick test runner: node server/analyzeIngredients.js
+// Test runner
 if (require.main === module) {
   analyzeIngredients(
     "Lay's Classic Chips",
